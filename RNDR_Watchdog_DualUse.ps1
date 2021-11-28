@@ -560,7 +560,7 @@ Function Get-IniContent {
 
 # ---- START OF THE WATCHDOG APPLICATION -----
 
-$WatchdogGithubRepo = "rndr-man/rndr-watchdog"
+$WatchdogGithubRepo = "tehfonsi/rndr-watchdog"
 $WatchdogGithubRepoName = "rndr-watchdog"
 
 
