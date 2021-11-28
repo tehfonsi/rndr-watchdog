@@ -15,6 +15,7 @@ $RNDRClientConfig = "$env:localappdata\OtoyRndrNetwork\rndr-config.ini"
 $GPUS = (Select-String -Path $RNDRClientConfig -Pattern "gpu\d_name" -AllMatches) | ForEach-Object { $_.Line.Substring($_.Line.IndexOf('=')+1, $_.Line.length - ($_.Line.IndexOf('=')+1)).Trim() }
 
 $global:LastJobSent = $null
+$global:LastState = $null
 
 Function Get-Last-Job-Finished {
   $Logs = Get-Content -Tail 50 $RNDRClientLogs
@@ -66,13 +67,17 @@ Function Check-Job {
   }
 }
 
-Function Set-State($CurrentActivity) {
-  $URL = "$($BASE_URL)/state"
-  $Params = @{node_id=$NODEID;type=$CurrentActivity}
-  $Result = Invoke-WebRequest -Uri $URL -Method POST -Body ($Params|ConvertTo-Json) -ContentType "application/json"
+Function Set-State($State) {
+  if ($State -ne $global:LastState) {
+    $URL = "$($BASE_URL)/state"
+    $Params = @{node_id=$NODEID;type=$State}
+    $Result = Invoke-WebRequest -Uri $URL -Method POST -Body ($Params|ConvertTo-Json) -ContentType "application/json"
 
-  # always check job e.g. when switching from rendering to mining or idle
-  Check-Job
+    $global:LastState = $State
+
+    # always check job e.g. when switching from rendering to mining or idle
+    Check-Job
+  }
 }
 
 Function Set-Operator {
