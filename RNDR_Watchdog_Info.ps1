@@ -14,6 +14,67 @@ $RNDRClientLogs = "$env:localappdata\OtoyRndrNetwork\rndr_log.txt"
 $RNDRClientConfig = "$env:localappdata\OtoyRndrNetwork\rndr-config.ini"
 $GPUS = (Select-String -Path $RNDRClientConfig -Pattern "gpu\d_name" -AllMatches) | ForEach-Object { $_.Line.Substring($_.Line.IndexOf('=')+1, $_.Line.length - ($_.Line.IndexOf('=')+1)).Trim() }
 
+$global:LastJobSent = $null
+
+Function Get-Last-Job-Finished {
+  $Logs = Get-Content -Tail 50 $RNDRClientLogs
+  $Job = @{};
+  foreach ($Line in $Logs) {
+    if ($Line -match "completed successfully") {
+      $Job.End = [Datetime]::ParseExact($Line.Substring(0,19).Trim(),"yyyy-MM-dd HH:mm:ss",$null)
+      $Job.Time = $Line.Substring(19) -replace "[^0-9.]" , ''
+      $Job.Result = 'Success'
+    }
+    if ($Line -match "job was canceled") {
+      $Job.End = [Datetime]::ParseExact($Line.Substring(0,19).Trim(),"yyyy-MM-dd HH:mm:ss",$null)
+      $Job.Time = 0
+      $Job.Result = 'Cancel'
+    }
+    if ($Line -match "job failed") {
+      $Job.End = [Datetime]::ParseExact($Line.Substring(0,19).Trim(),"yyyy-MM-dd HH:mm:ss",$null)
+      $Job.Time = 0
+      $Job.Result = 'Fail'
+    }
+    if ($Line -match "new render job") {
+      $StartDate = [Datetime]::ParseExact($Line.Substring(0,19).Trim(),"yyyy-MM-dd HH:mm:ss",$null)
+      $Job.Start = $StartDate
+      $Job.Id = $StartDate.Ticks / 10000000
+    }
+  }
+  return $Job
+}
+
+Function Send-Job($Job) {
+  Write-Host Send Job
+
+  $URL = "$($BASE_URL)/job"
+  $Start = $Job.Start.ToUniversalTime().ToString("o")
+  $End = $Job.End.ToUniversalTime().ToString("o")
+  $Params = @{node_id=$NODEID;start=$Start;end=$End;time=$Job.Time;result=$Job.Result}
+  $Result = Invoke-WebRequest -Uri $URL -Method POST -Body ($Params|ConvertTo-Json) -ContentType "application/json"
+
+  $global:LastJobSent = $LastJobFinished
+}
+
+Function Check-Job {
+  $LastJobFinished = Get-Last-Job-Finished
+  if ($null -eq $global:LastJobSent) {
+    $global:LastJobSent = $LastJobFinished
+  }
+  if ($global:LastJobSent.Id -ne $LastJobFinished.Id) {
+    Send-Job($LastJobFinished)
+  }
+}
+
+Function Set-State($CurrentActivity) {
+  $URL = "$($BASE_URL)/state"
+  $Params = @{node_id=$NODEID;type=$CurrentActivity}
+  $Result = Invoke-WebRequest -Uri $URL -Method POST -Body ($Params|ConvertTo-Json) -ContentType "application/json"
+
+  # always check job e.g. when switching from rendering to mining or idle
+  Check-Job
+}
+
 Function Set-Operator {
   $URL = "$($BASE_URL)/operator"
   $Params = @{eth_address=$WALLETID}
@@ -29,4 +90,5 @@ Function Set-Node {
 Function Set-RNDR-Info {
   Set-Operator
   Set-Node
+  Check-Job
 }

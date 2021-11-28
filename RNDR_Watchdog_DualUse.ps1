@@ -325,6 +325,8 @@ Function Write-Watchdog-Status {
 
     # Save stats to csv file if activated
     if($WriteStatsFile){Write-Watchdog-Stats}
+
+    Set-State($CurrentActivity)
 }
 
 # Helper function to add stats to the CSV
@@ -833,6 +835,10 @@ while ($true)
 
         # Update timestamp when RNDR started
         $global:RNDRStartDate = Get-Date
+    } 
+    else 
+    {
+        Check-Job
     }
 
     # Make sure RNDR client is still running 
