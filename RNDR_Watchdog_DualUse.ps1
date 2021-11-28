@@ -1,3 +1,5 @@
+Import-Module .\RNDR_Watchdog_Info.ps1
+Set-RNDR-Info
 # RNDR Watchdog (Dual Use Version)
 # Filename: RNDR_Watchdog_DualUse.ps1
 
@@ -783,8 +785,10 @@ while ($true)
         } 
         else 
         {
-            $CurrentActivity = "Idle"
-            Write-Watchdog-Status
+            if ($CurrentActivity -ne "Idle") {
+                $CurrentActivity = "Idle"
+                Write-Watchdog-Status 
+            }
         }
 
         # Make sure RNDR client is still running 
