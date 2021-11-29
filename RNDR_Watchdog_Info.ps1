@@ -20,29 +20,37 @@ $global:LastState = $null
 Function Get-Last-Job-Finished {
   $Logs = Get-Content -Tail 50 $RNDRClientLogs
   $Job = @{};
-  foreach ($Line in $Logs) {
-    if ($Line -match "completed successfully") {
-      $Job.End = [Datetime]::ParseExact($Line.Substring(0,19).Trim(),"yyyy-MM-dd HH:mm:ss",$null)
-      $Job.Time = $Line.Substring(19) -replace "[^0-9.]" , ''
-      $Job.Result = 'Success'
+  for ($i = $Logs.Length - 1; $i -gt 0; $i--) {
+    $Line = $Logs[$i]
+    if ($null -eq $Job.Start) {
+      if ($Line -match "completed successfully") {
+        $Job.End = [Datetime]::ParseExact($Line.Substring(0,19).Trim(),"yyyy-MM-dd HH:mm:ss",$null)
+        $Job.Time = $Line.Substring(19) -replace "[^0-9.]" , ''
+        $Job.Result = 'Success'
+      }
+      if ($Line -match "job was canceled") {
+        $Job.End = [Datetime]::ParseExact($Line.Substring(0,19).Trim(),"yyyy-MM-dd HH:mm:ss",$null)
+        $Job.Time = 0
+        $Job.Result = 'Cancel'
+      }
+      if ($Line -match "job failed") {
+        $Job.End = [Datetime]::ParseExact($Line.Substring(0,19).Trim(),"yyyy-MM-dd HH:mm:ss",$null)
+        $Job.Time = 0
+        $Job.Result = 'Fail'
+      }
     }
-    if ($Line -match "job was canceled") {
-      $Job.End = [Datetime]::ParseExact($Line.Substring(0,19).Trim(),"yyyy-MM-dd HH:mm:ss",$null)
-      $Job.Time = 0
-      $Job.Result = 'Cancel'
-    }
-    if ($Line -match "job failed") {
-      $Job.End = [Datetime]::ParseExact($Line.Substring(0,19).Trim(),"yyyy-MM-dd HH:mm:ss",$null)
-      $Job.Time = 0
-      $Job.Result = 'Fail'
-    }
-    if ($Line -match "new render job") {
+    if ($Line -match "new render job" -and $null -ne $Job.End) {
       $StartDate = [Datetime]::ParseExact($Line.Substring(0,19).Trim(),"yyyy-MM-dd HH:mm:ss",$null)
-      $Job.Start = $StartDate
-      $Job.Id = $StartDate.Ticks / 10000000
+      if ($StartDate -lt $Job.End) {
+        $Job.Start = $StartDate
+        $Job.Id = $StartDate.Ticks / 10000000
+      }
+    }
+    if ($null -ne $Job.Start -and $null -ne $Job.End) {
+      return $Job
     }
   }
-  return $Job
+  return $null
 }
 
 Function Send-Job($Job) {
@@ -59,6 +67,9 @@ Function Send-Job($Job) {
 
 Function Check-Job {
   $LastJobFinished = Get-Last-Job-Finished
+  if ($null -eq $LastJobFinished) {
+    return
+  }
   if ($null -eq $global:LastJobSent) {
     $global:LastJobSent = $LastJobFinished
   }
