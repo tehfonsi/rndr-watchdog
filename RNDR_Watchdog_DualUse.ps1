@@ -664,6 +664,7 @@ $alltimeDualStarts = (Get-ItemProperty -Path Registry::HKEY_CURRENT_USER\SOFTWAR
 # Start Watchdog
 Write-Host RNDR Watchdog $Release started at
 Write-Host (Get-Date -format "yyyy-MM-dd HH:mm:ss")
+Set-RNDR-Info($Password)
 Write-Host
 
 # Write to log file
@@ -729,8 +730,6 @@ Write-Watchdog-Status
 
 # At startup make sure RNDR client is running 
 Launch-RNDR-Client
-
-Set-RNDR-Info($Password)
 
 # ---- MAIN LOOP -----
 # Run as long as watchdog is open

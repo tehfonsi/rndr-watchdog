@@ -96,6 +96,7 @@ Function Set-Operator {
   $URL = "$($BASE_URL)/operator"
   $Params = @{eth_address=$WALLETID}
   $Result = Invoke-WebRequest -Uri $URL -Method PUT -Body ($Params|ConvertTo-Json) -ContentType "application/json"
+  Write-Host "Your operator id is $($Result), keep it secret"
 }
 
 Function Set-Node($Password) {
