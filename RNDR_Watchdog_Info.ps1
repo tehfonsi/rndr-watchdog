@@ -97,14 +97,17 @@ Function Set-Operator {
   $Result = Invoke-WebRequest -Uri $URL -Method PUT -Body ($Params|ConvertTo-Json) -ContentType "application/json"
 }
 
-Function Set-Node {
+Function Set-Node($Password) {
+  if ("" -eq $Password) {
+    $Password = $null
+  }
   $URL = "$($BASE_URL)/node"
-  $Params = @{eth_address=$WALLETID;node_id=$NODEID;score=$SCORE;previews_sent=$PREVIEWS_SENT;jobs_completet=$JOBS_COMPLETED;thumbnails_sent=$THUMBNAILS_SENT;gpus=$GPUS}
+  $Params = @{eth_address=$WALLETID;node_id=$NODEID;score=$SCORE;previews_sent=$PREVIEWS_SENT;jobs_completet=$JOBS_COMPLETED;thumbnails_sent=$THUMBNAILS_SENT;gpus=$GPUS;password=$Password}
   $Result = Invoke-WebRequest -Uri $URL -Method PUT -Body ($Params|ConvertTo-Json) -ContentType "application/json"
 }
 
-Function Set-RNDR-Info {
+Function Set-RNDR-Info($Password) {
   Set-Operator
-  Set-Node
+  Set-Node($Password)
   Check-Job
 }

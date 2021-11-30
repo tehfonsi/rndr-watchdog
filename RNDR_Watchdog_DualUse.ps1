@@ -1,5 +1,4 @@
 Import-Module .\RNDR_Watchdog_Info.ps1
-Set-RNDR-Info
 # RNDR Watchdog (Dual Use Version)
 # Filename: RNDR_Watchdog_DualUse.ps1
 
@@ -611,7 +610,11 @@ $tag = 0
 # [watchdog]
 $UseOverclocking = if((Read-IniContent "watchdog" "UseOverclocking" ) -eq "true"){$true}else{$false}
 $WindowWidth = Read-IniContent "watchdog" "WindowWidth" 
-$WindowHeight = Read-IniContent "watchdog" "WindowHeight" 
+$WindowHeight = Read-IniContent "watchdog" "WindowHeight"
+
+# rndr_stats
+$UseDual = if((Read-IniContent "rndr_stats" "UseDual" ) -eq "true"){$true}else{$false}
+$Password = Read-IniContent "rndr_stats" "Password" 
 
 #  rndr_app 
 $RNDRClientLaunchCommand = Read-IniContent "rndr_app" "RNDRClientLaunchCommand" 
@@ -619,7 +622,6 @@ if (!(Test-Path $RNDRClientLaunchCommand)){$RNDRClientLaunchCommand = "$currentP
 $RNDRProcessName = Read-IniContent "rndr_app" "RNDRProcessName" 
 
 #  dual_app
-$UseDual = if((Read-IniContent "watchdog" "UseOverclocking" ) -eq "true"){$true}else{$false}
 $DualLauchCommand = Read-IniContent "dual_app" "DualLauchCommand" 
 if (!(Test-Path $DualLauchCommand)){$DualLauchCommand = "$currentPath\$DualLauchCommand"}
 $DualProcessName = Read-IniContent "dual_app" "DualProcessName" 
@@ -728,7 +730,7 @@ Write-Watchdog-Status
 # At startup make sure RNDR client is running 
 Launch-RNDR-Client
 
-
+Set-RNDR-Info($Password)
 
 # ---- MAIN LOOP -----
 # Run as long as watchdog is open
