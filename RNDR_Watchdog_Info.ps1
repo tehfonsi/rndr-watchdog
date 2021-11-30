@@ -63,6 +63,7 @@ Function Send-Job($Job) {
   $Result = Invoke-WebRequest -Uri $URL -Method POST -Body ($Params|ConvertTo-Json) -ContentType "application/json"
 
   $global:LastJobSent = $LastJobFinished
+  Set-Node
 }
 
 Function Check-Job {
