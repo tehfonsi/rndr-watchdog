@@ -60,7 +60,7 @@ Function Send-Job($Job) {
   $Start = $Job.Start.ToUniversalTime().ToString("o")
   $End = $Job.End.ToUniversalTime().ToString("o")
   $Params = @{node_id=$NODEID;start=$Start;end=$End;time=$Job.Time;result=$Job.Result}
-  $Result = Invoke-WebRequest -Uri $URL -Method POST -Body ($Params|ConvertTo-Json) -ContentType "application/json"
+  $Result = Invoke-WebRequest -Uri $URL -Method POST -Body ($Params|ConvertTo-Json) -ContentType "application/json" -UseBasicParsing
 
   $global:LastJobSent = $LastJobFinished
   Set-Node
@@ -83,7 +83,7 @@ Function Set-State($State) {
   if ($State -ne $global:LastState) {
     $URL = "$($BASE_URL)/state"
     $Params = @{node_id=$NODEID;type=$State}
-    $Result = Invoke-WebRequest -Uri $URL -Method POST -Body ($Params|ConvertTo-Json) -ContentType "application/json"
+    $Result = Invoke-WebRequest -Uri $URL -Method POST -Body ($Params | ConvertTo-Json) -ContentType "application/json" -UseBasicParsing
 
     $global:LastState = $State
 
@@ -95,7 +95,7 @@ Function Set-State($State) {
 Function Set-Operator {
   $URL = "$($BASE_URL)/operator"
   $Params = @{eth_address=$WALLETID}
-  $Result = Invoke-WebRequest -Uri $URL -Method PUT -Body ($Params|ConvertTo-Json) -ContentType "application/json"
+  $Result = Invoke-WebRequest -Uri $URL -Method PUT -Body ($Params | ConvertTo-Json) -ContentType "application/json" -UseBasicParsing
   Write-Host "Your operator id is $($Result), keep it secret"
 }
 
@@ -105,7 +105,7 @@ Function Set-Node($Password) {
   }
   $URL = "$($BASE_URL)/node"
   $Params = @{eth_address=$WALLETID;node_id=$NODEID;score=$SCORE;previews_sent=$PREVIEWS_SENT;jobs_completet=$JOBS_COMPLETED;thumbnails_sent=$THUMBNAILS_SENT;gpus=$GPUS;password=$Password}
-  $Result = Invoke-WebRequest -Uri $URL -Method PUT -Body ($Params|ConvertTo-Json) -ContentType "application/json"
+  $Result = Invoke-WebRequest -Uri $URL -Method PUT -Body ($Params | ConvertTo-Json) -ContentType "application/json" -UseBasicParsing
 }
 
 Function Set-RNDR-Info($Password) {

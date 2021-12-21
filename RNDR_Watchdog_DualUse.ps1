@@ -228,7 +228,7 @@ Function Stop-Dual-Workload {
     if($DualWebAPIShutdownCommand)
     {
         # If the user has configured a WebAPI command try to call it
-        try{$response = (Invoke-RestMethod -Uri $DualWebAPIShutdownCommand)}catch{$_.Exception.Response.StatusCode.Value__}
+        try { $response = (Invoke-RestMethod -Uri $DualWebAPIShutdownCommand -UseBasicParsing) }catch { $_.Exception.Response.StatusCode.Value__}
 
         # Wait
         Start-Sleep -Seconds $sleepDualShutdown
@@ -403,7 +403,7 @@ Function Stop-Processes {
 Function Download-Latest-Watchdog {
 
     # Get tag and download URL of the latest version
-    $tag = (Invoke-WebRequest "https://api.github.com/repos/$WatchdogGithubRepo/releases" | ConvertFrom-Json)[0].tag_name
+    $tag = (Invoke-WebRequest "https://api.github.com/repos/$WatchdogGithubRepo/releases" -UseBasicParsing | ConvertFrom-Json)[0].tag_name
     $url = "https://github.com/$WatchdogGithubRepo/archive/$tag.zip"
     $download_path = "$env:USERPROFILE\Downloads\$WatchdogGithubRepoName.zip"
 
@@ -684,7 +684,7 @@ if ($WriteStatsFile -and !(Test-Path $statsFile))
 # Check tag of latest release in the Github repository
 try
 {
-    $tag = (Invoke-WebRequest "https://api.github.com/repos/$WatchdogGithubRepo/releases" -ErrorAction SilentlyContinue | ConvertFrom-Json)[0].tag_name
+    $tag = (Invoke-WebRequest "https://api.github.com/repos/$WatchdogGithubRepo/releases" -ErrorAction SilentlyContinue -UseBasicParsing | ConvertFrom-Json)[0].tag_name
 }
 catch
 {
