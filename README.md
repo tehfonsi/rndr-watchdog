@@ -5,6 +5,8 @@ This Windows Powershell script ensures the RenderToken.com RNDRclient.exe (RNDR)
 
 - For the dual workload to work properly you need to set the correct values for DualLauchCommand, DualProcessName in the user config file. If the software you want to use besides RNDR features a web API you can set the value DualWebAPIShutdownCommand accordingly. If not you should leave that value blank.
 
+- If you do not want do use dual mode you can disabling it in the RNDR_Watchdog_Userconfig.ini by setting `UseDual=false`
+
 - The RNDR client application rndrclient.exe needs to be in the same folder as the watchdog.
 
 - To launch the watchdog please doubleclick the batch file RNDR_Watchdog_START.bat

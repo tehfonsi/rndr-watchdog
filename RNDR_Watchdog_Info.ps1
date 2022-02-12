@@ -15,6 +15,7 @@ $RNDRClientConfig = "$env:localappdata\OtoyRndrNetwork\rndr-config.ini"
 $GPUS = (Select-String -Path $RNDRClientConfig -Pattern "gpu\d_name" -AllMatches) | ForEach-Object { $_.Line.Substring($_.Line.IndexOf('=')+1, $_.Line.length - ($_.Line.IndexOf('=')+1)).Trim() }
 
 $global:LastJobSent = $null
+$global:LastNodeUpdate = $null
 $global:LastState = $null
 
 Function Get-Last-Job-Finished {
@@ -54,7 +55,7 @@ Function Get-Last-Job-Finished {
 }
 
 Function Send-Job($Job) {
-  Write-Host Send Job
+  Write-Host (Get-Date -format "yyyy-MM-dd HH:mm:ss") : Send Job
 
   $URL = "$($BASE_URL)/job"
   $Start = $Job.Start.ToUniversalTime().ToString("o")
@@ -63,7 +64,6 @@ Function Send-Job($Job) {
   $Result = Invoke-WebRequest -Uri $URL -Method POST -Body ($Params|ConvertTo-Json) -ContentType "application/json" -UseBasicParsing
 
   $global:LastJobSent = $LastJobFinished
-  Set-Node
 }
 
 Function Check-Job {
@@ -106,6 +106,17 @@ Function Set-Node($Password) {
   $URL = "$($BASE_URL)/node"
   $Params = @{eth_address=$WALLETID;node_id=$NODEID;score=$SCORE;previews_sent=$PREVIEWS_SENT;jobs_completet=$JOBS_COMPLETED;thumbnails_sent=$THUMBNAILS_SENT;gpus=$GPUS;password=$Password}
   $Result = Invoke-WebRequest -Uri $URL -Method PUT -Body ($Params | ConvertTo-Json) -ContentType "application/json" -UseBasicParsing
+  
+  Write-Host (Get-Date -format "yyyy-MM-dd HH:mm:ss") : Update Node
+  $global:LastNodeUpdate = Get-Date
+}
+
+Function Update-Node() {
+  # Update node at least every 59 minutes
+  $Timespan = New-TimeSpan -Minutes 59
+  if (((Get-Date) - $global:LastNodeUpdate) -gt $Timespan) {
+    Set-Node
+  }
 }
 
 Function Set-RNDR-Info($Password) {

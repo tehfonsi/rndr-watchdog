@@ -1,7 +1,7 @@
 # RNDR Watchdog (Dual Use Version)
 # Filename: RNDR_Watchdog_DualUse.ps1
 
-$Release = "0.3.6"
+$Release = "0.4.0"
 
 # This Windows Powershell script ensures the RenderToken RNDRclient.exe (RNDR) is running at all time and allows to start/shutdown an alternative workload (Dual) when the client signals it is idle.
 # The RNDR client won't process any job if the GPUs are under load or VRAM is used, therefore the Dual workload needs to be shut down completely before rendering.
@@ -802,9 +802,9 @@ while ($true)
         # Wait 
         Start-Sleep -Seconds $sleepIdle
 
-        
-        if($global:DualStartDate){$DualRuntimeCounter = $DualRuntime + (New-TimeSpan -Start $global:DualStartDate).Totalhours}
-        
+        Update-Node
+
+        if($global:DualStartDate -And $UseDual) {$DualRuntimeCounter = $DualRuntime + (New-TimeSpan -Start $global:DualStartDate).Totalhours}
 
     }
 
@@ -849,6 +849,8 @@ while ($true)
 
     # Wait
     Start-Sleep -Seconds $sleepBusy
+
+    Update-Node
 
     if($global:RNDRStartDate){$RNDRRuntimeCounter = $RNDRRuntime + (New-TimeSpan -Start $global:RNDRStartDate).Totalhours}
     
