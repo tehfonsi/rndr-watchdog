@@ -26,7 +26,8 @@ Function Get-Last-Job-Finished {
     if ($null -eq $Job.Start) {
       if ($Line -match "completed successfully") {
         $Job.End = [Datetime]::ParseExact($Line.Substring(0, 19).Trim(), "yyyy-MM-dd HH:mm:ss", $null)
-        $Job.Time = [regex]::Matches($Line, '\d+(\.\d+)?')[$Matches.Count - 1].Value
+        $Numbers = [regex]::Matches($Line, '\d+(\.\d+)?')
+        $Job.Time = $Numbers[$Numbers.Count - 1].Value
         $Job.Result = 'Success'
       }
       if ($Line -match "job was canceled") {

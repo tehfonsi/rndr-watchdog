@@ -1,7 +1,7 @@
 # RNDR Watchdog (Dual Use Version)
 # Filename: RNDR_Watchdog_DualUse.ps1
 
-$Release = "0.4.4"
+$Release = "0.4.5"
 
 # This Windows Powershell script ensures the RenderToken RNDRclient.exe (RNDR) is running at all time and allows to start/shutdown an alternative workload (Dual) when the client signals it is idle.
 # The RNDR client won't process any job if the GPUs are under load or VRAM is used, therefore the Dual workload needs to be shut down completely before rendering.
@@ -32,24 +32,20 @@ Function Launch-RNDR-Client {
 
     # Check if RNDR Client is running. 
     $RNDRProcesses = Get-Process -Name $RNDRProcessName -ErrorAction SilentlyContinue
-    if ($RNDRProcesses -eq $null)
-    {
+    if ($RNDRProcesses -eq $null) {
         # Restart if not.
         # Set overclocking profile to RNDR
-        If ($UseOverclocking)
-        {
+        If ($UseOverclocking) {
             Start-Process -WindowStyle Minimized $OverclockingApp $OverclockingCommandRNDR
             Add-Logfile-Entry "Overclocking set to $OverclockingCommandRNDR."
         }
 
         Write-Host (Get-Date -format "yyyy-MM-dd HH:mm:ss") : RNDR client application launched.
 
-        if (Test-Path $RNDRClientLaunchCommand) 
-        {
+        if (Test-Path $RNDRClientLaunchCommand) {
             Start-Process $RNDRClientLaunchCommand -WindowStyle Minimized
         }
-        else
-        {
+        else {
             Add-Logfile-Entry "Cannot start RNDR because file does not exist. Please configure RNDRLauchCommand in watchdog correctly. $RNDRClientLaunchCommand"
             Write-Host  -ForegroundColor Red (Get-Date -format "yyyy-MM-dd HH:mm:ss") : Cannot start RNDR because file does not exist. 
             Write-Host (Get-Date -format "yyyy-MM-dd HH:mm:ss") : Please configure RNDRLauchCommand in watchdog correctly. $RNDRClientLaunchCommand
@@ -73,8 +69,7 @@ Function Keep-RNDR-Client-Running {
     # Check if RNDR Client is running. Restart if not. The actual Watchdog.
     $RNDRProcesses = Get-Process -Name $RNDRProcessName -ErrorAction SilentlyContinue
     
-    if ($RNDRProcesses -eq $null)
-    {
+    if ($RNDRProcesses -eq $null) {
 
         Write-Host -ForegroundColor Red (Get-Date -format "yyyy-MM-dd HH:mm:ss") : RNDR client is not running. Restarting now.
 
@@ -90,16 +85,12 @@ Function Keep-RNDR-Client-Running {
         Launch-RNDR-Client
 
     } 
-    else 
-    { 
+    else { 
         # Check if RNDR client has been NOT RESPONDING recently
-        if($global:RNDRNotRespondedSince -eq $null)
-        { 
-            foreach ($RNDRProcess in $RNDRProcesses) 
-            {
+        if ($global:RNDRNotRespondedSince -eq $null) { 
+            foreach ($RNDRProcess in $RNDRProcesses) {
                 # Check if RNDR client is NOT RESPONDING.
-                if(!$RNDRProcess.Responding)
-                {
+                if (!$RNDRProcess.Responding) {
                     #Timestamp when client was not responding
                     $global:RNDRNotRespondedSince = Get-Date
                     Write-Host (Get-Date -format "yyyy-MM-dd HH:mm:ss") : RNDR client is not responding. Waiting...
@@ -110,17 +101,13 @@ Function Keep-RNDR-Client-Running {
                 }
             }
         }
-        else
-        {
+        else {
             # Delay kill command for some time as client might just be starting up
-            if((New-TimeSpan -start $global:RNDRNotRespondedSince).TotalSeconds -gt $sleepRNDRNotResponding)
-            {
+            if ((New-TimeSpan -start $global:RNDRNotRespondedSince).TotalSeconds -gt $sleepRNDRNotResponding) {
                 # Kill if still NOT RESPONDING
-                foreach ($RNDRProcess in $RNDRProcesses) 
-                {
+                foreach ($RNDRProcess in $RNDRProcesses) {
                     # Check if RNDR client is NOT RESPONDING.
-                    if(!$RNDRProcess.Responding)
-                    {
+                    if (!$RNDRProcess.Responding) {
 
                         Write-Host (Get-Date -format "yyyy-MM-dd HH:mm:ss") : RNDR client is not responding. Stopping process now.
                     
@@ -157,22 +144,18 @@ Function Check-RNDR-Client-Idle {
 Function Launch-Dual-Workload {
 
     #For safety, only launch if really not running right now
-    if (!(Check-Dual-Workload-Running))
-    {
+    if (!(Check-Dual-Workload-Running)) {
  
         # Run Nvidia-SMI to check for locked GPUs
-        try{Start-Process -wait -WindowStyle Minimized "nvidia-smi" -ErrorAction SilentlyContinue}catch{}
+        try { Start-Process -wait -WindowStyle Minimized "nvidia-smi" -ErrorAction SilentlyContinue }catch {}
         
         # Set overclocking profile to Dual
-        If ($UseOverclocking)
-        {
-            if (Test-Path $OverclockingApp) 
-            {
+        If ($UseOverclocking) {
+            if (Test-Path $OverclockingApp) {
                 Start-Process -WindowStyle Minimized $OverclockingApp $OverclockingCommandDual
                 Add-Logfile-Entry "Overclocking set to $OverclockingCommandDual."
             }
-            else
-            {
+            else {
                 Add-Logfile-Entry "Cannot start overclocking because file does not exist. Please configure OverclockingApp in watchdog correctly. $OverclockingApp"
                 Write-Host (Get-Date -format "yyyy-MM-dd HH:mm:ss") : Cannot start overclocking because file does not exist. Please configure OverclockingApp in watchdog correctly. $OverclockingApp
             }
@@ -185,20 +168,16 @@ Function Launch-Dual-Workload {
         #
         #Add your code here how to start your dual workload
         #
-        if (Test-Path $DualLauchCommand) 
-        {
-            if ($StartAsAdmin) 
-            {
+        if (Test-Path $DualLauchCommand) {
+            if ($StartAsAdmin) {
                 $StartedProcess = Start-Process $DualLauchCommand -Verb RunAs -WindowStyle Minimized -PassThru -WorkingDirectory (Split-Path $DualLauchCommand -Parent)
             } 
-            else
-            {
+            else {
                 #Example code if your workload requires admin rights
                 $StartedProcess = Start-Process $DualLauchCommand -WindowStyle Minimized -PassThru -WorkingDirectory (Split-Path $DualLauchCommand -Parent)
             }
         }
-        else
-        {
+        else {
             Add-Logfile-Entry "Cannot start Dual because file does not exist. Please configure DualLauchCommand in watchdog correctly. $DualLauchCommand"
             Write-Host  -ForegroundColor Red (Get-Date -format "yyyy-MM-dd HH:mm:ss") : Cannot start Dual because file does not exist. 
             Write-Host (Get-Date -format "yyyy-MM-dd HH:mm:ss") : Please configure RNDRLauchCommand in watchdog correctly. $DualLauchCommand
@@ -225,19 +204,16 @@ Function Stop-Dual-Workload {
     #
     #
     # Add your code here how to stop your dual workload. 
-    if($DualWebAPIShutdownCommand)
-    {
+    if ($DualWebAPIShutdownCommand) {
         # If the user has configured a WebAPI command try to call it
-        try { $response = (Invoke-RestMethod -Uri $DualWebAPIShutdownCommand -UseBasicParsing) }catch { $_.Exception.Response.StatusCode.Value__}
+        try { $response = (Invoke-RestMethod -Uri $DualWebAPIShutdownCommand -UseBasicParsing) }catch { $_.Exception.Response.StatusCode.Value__ }
 
         # Wait
         Start-Sleep -Seconds $sleepDualShutdown
     }    
-    else
-    {
+    else {
         # If there is no WebAPI try a graceful shutdown
-        if ($DualProcess.Responding)
-        {
+        if ($DualProcess.Responding) {
             $DualProcess.CloseMainWindow() | Out-Null
 
             # Wait
@@ -254,15 +230,12 @@ Function Stop-Dual-Workload {
 
 
     # Set overclocking profile back to RNDR
-    If ($UseOverclocking)
-    {
-        if (Test-Path $OverclockingApp) 
-        {
+    If ($UseOverclocking) {
+        if (Test-Path $OverclockingApp) {
             Start-Process -WindowStyle Minimized $OverclockingApp $OverclockingCommandRNDR
             Add-Logfile-Entry "Overclocking set to $OverclockingCommandRNDR."
         }
-        else
-        {
+        else {
             Add-Logfile-Entry "Cannot start overclocking because file does not exist. Please configure OverclockingApp in watchdog correctly. $OverclockingApp"
             Write-Host (Get-Date -format "yyyy-MM-dd HH:mm:ss") : Cannot start overclocking because file does not exist. Please configure OverclockingApp in watchdog correctly. $OverclockingApp
         }
@@ -289,12 +262,12 @@ Function Check-Dual-Workload-Running {
 
 # Helper function to write all-time values back to registry
 Function Update-Registry-Runtimes {
-        #Write new time write back to registry
-        Set-ItemProperty -Path Registry::HKEY_CURRENT_USER\SOFTWARE\OTOY -Name Runtime_Watchdog -errorAction SilentlyContinue -Value $([math]::Round((New-TimeSpan -Start $StartDate).Totalhours + $alltimeWatchdog,2))
-        Set-ItemProperty -Path Registry::HKEY_CURRENT_USER\SOFTWARE\OTOY -Name Runtime_RNDR -errorAction SilentlyContinue -Value $([math]::Round($RNDRRuntimeCounter + $alltimeRNDR,2))
-        Set-ItemProperty -Path Registry::HKEY_CURRENT_USER\SOFTWARE\OTOY -Name Runtime_Dual -errorAction SilentlyContinue -Value $([math]::Round($DualRuntimeCounter + $alltimeDual,2))
-        Set-ItemProperty -Path Registry::HKEY_CURRENT_USER\SOFTWARE\OTOY -Name Restarts_RNDR -errorAction SilentlyContinue -Value ($global:RNDRRestarts + $alltimeRNDRRestarts)
-        Set-ItemProperty -Path Registry::HKEY_CURRENT_USER\SOFTWARE\OTOY -Name Starts_Dual -errorAction SilentlyContinue -Value ($global:DualStarts + $alltimeDualStarts)
+    #Write new time write back to registry
+    Set-ItemProperty -Path Registry::HKEY_CURRENT_USER\SOFTWARE\OTOY -Name Runtime_Watchdog -errorAction SilentlyContinue -Value $([math]::Round((New-TimeSpan -Start $StartDate).Totalhours + $alltimeWatchdog, 2))
+    Set-ItemProperty -Path Registry::HKEY_CURRENT_USER\SOFTWARE\OTOY -Name Runtime_RNDR -errorAction SilentlyContinue -Value $([math]::Round($RNDRRuntimeCounter + $alltimeRNDR, 2))
+    Set-ItemProperty -Path Registry::HKEY_CURRENT_USER\SOFTWARE\OTOY -Name Runtime_Dual -errorAction SilentlyContinue -Value $([math]::Round($DualRuntimeCounter + $alltimeDual, 2))
+    Set-ItemProperty -Path Registry::HKEY_CURRENT_USER\SOFTWARE\OTOY -Name Restarts_RNDR -errorAction SilentlyContinue -Value ($global:RNDRRestarts + $alltimeRNDRRestarts)
+    Set-ItemProperty -Path Registry::HKEY_CURRENT_USER\SOFTWARE\OTOY -Name Starts_Dual -errorAction SilentlyContinue -Value ($global:DualStarts + $alltimeDualStarts)
 }
 
 # Helper function to update the UI with the current status and stats
@@ -306,12 +279,12 @@ Function Write-Watchdog-Status {
     $alltimeWatchdogFormatted = '{0:#,##0} hours' -f $([math]::Floor((New-TimeSpan -Start $StartDate).Totalhours + $alltimeWatchdog))
     $alltimeRNDRFormatted = '{0:#,##0} hours' -f $([math]::Floor($RNDRRuntimeCounter + $alltimeRNDR))
     $alltimeDualFormatted = '{0:#,##0} hours' -f $([math]::Floor($DualRuntimeCounter + $alltimeDual))
-    $percentRNDRFormatted = '{00}%' -f $([math]::Floor((($RNDRRuntimeCounter + $alltimeRNDR))/((New-TimeSpan -Start $StartDate).Totalhours + $alltimeWatchdog)*100))
-    $percentDualFormatted = '{00}%' -f $([math]::Floor((($DualRuntimeCounter + $alltimeDual))/((New-TimeSpan -Start $StartDate).Totalhours + $alltimeWatchdog)*100))
+    $percentRNDRFormatted = '{00}%' -f $([math]::Floor((($RNDRRuntimeCounter + $alltimeRNDR)) / ((New-TimeSpan -Start $StartDate).Totalhours + $alltimeWatchdog) * 100))
+    $percentDualFormatted = '{00}%' -f $([math]::Floor((($DualRuntimeCounter + $alltimeDual)) / ((New-TimeSpan -Start $StartDate).Totalhours + $alltimeWatchdog) * 100))
     $alltimeRNDRRestartsFormatted = '{0:#,##0}' -f ($global:RNDRRestarts + $alltimeRNDRRestarts)
     $alltimeDualStartsFormatted = '{0:#,##0}' -f ($global:DualStarts + $alltimeDualStarts)
         
-    $alltimeRNDRJobsCompletedFormatted = '{0:#,##0} frames' -f ([convert]::ToInt32((Get-ItemProperty -Path Registry::HKEY_CURRENT_USER\SOFTWARE\OTOY -Name JOBS_COMPLETED -errorAction SilentlyContinue).JOBS_COMPLETED),10)
+    $alltimeRNDRJobsCompletedFormatted = '{0:#,##0} frames' -f ([convert]::ToInt32((Get-ItemProperty -Path Registry::HKEY_CURRENT_USER\SOFTWARE\OTOY -Name JOBS_COMPLETED -errorAction SilentlyContinue).JOBS_COMPLETED), 10)
     
     Write-Progress -Id 1 -Activity "Current work: $CurrentActivity - $(Get-Date -format "yyyy-MM-dd HH:mm:ss")" -Status "RNDR restarts $global:RNDRRestarts, alltime $alltimeRNDRRestartsFormatted - Dual starts $global:DualStarts, alltime $alltimeDualStartsFormatted"    
     Write-Progress -Id 2 -Activity "Watchdog uptime" -Status "$WatchdogFormatted, alltime $alltimeWatchdogFormatted" 
@@ -322,7 +295,7 @@ Function Write-Watchdog-Status {
     Update-Registry-Runtimes 
 
     # Save stats to csv file if activated
-    if($WriteStatsFile){Write-Watchdog-Stats}
+    if ($WriteStatsFile) { Write-Watchdog-Stats }
 
     Set-State($CurrentActivity)
 }
@@ -332,12 +305,11 @@ Function Write-Watchdog-Stats {
     
     # Write stats every hour 
     # TO DO: Add number of minutes to config
-    if((New-TimeSpan -start $global:LastStatsWritten).TotalMinutes -ge $RNDRStatsPolling)
-    {
+    if ((New-TimeSpan -start $global:LastStatsWritten).TotalMinutes -ge $RNDRStatsPolling) {
     
         # Calculate the growth since the last stats
-        $RNDRStatsFormatted = [math]::Round(($RNDRRuntimeCounter - $global:RNDRStatsCounter)*60)
-        $DualStatsFormatted = [math]::Round(($DualRuntimeCounter - $global:DualStatsCounter)*60)
+        $RNDRStatsFormatted = [math]::Round(($RNDRRuntimeCounter - $global:RNDRStatsCounter) * 60)
+        $DualStatsFormatted = [math]::Round(($DualRuntimeCounter - $global:DualStatsCounter) * 60)
         
         $RNDRStatsPercentage = "$([math]::Round((($RNDRRuntimeCounter - $global:RNDRStatsCounter)*60)/$RNDRStatsPolling*100))%"
         $DualStatsPercentage = "$([math]::Round((($DualRuntimeCounter - $global:DualStatsCounter)*60)/$RNDRStatsPolling*100))%"
@@ -347,7 +319,7 @@ Function Write-Watchdog-Stats {
         
         # Write to the stats file
         # To DO: add delimiter to config. If no delimiter set use culture setting.
-        [pscustomobject]@{ Time =  $(Get-Date -format "yyyy-MM-dd HH:mm:ss"); RNDRMinutes = $RNDRStatsFormatted; DualMinutes = $DualStatsFormatted ; RNDRPercentage = $RNDRStatsPercentage ; DualPercentage = $DualStatsPercentage ; RNDRRestarts = $RNDRStatsRestartsFormatted ; DualStarts = $DualStatsStartsFormatted } | Export-Csv -Path $statsFile -Append -NoTypeInformation -UseCulture
+        [pscustomobject]@{ Time = $(Get-Date -format "yyyy-MM-dd HH:mm:ss"); RNDRMinutes = $RNDRStatsFormatted; DualMinutes = $DualStatsFormatted ; RNDRPercentage = $RNDRStatsPercentage ; DualPercentage = $DualStatsPercentage ; RNDRRestarts = $RNDRStatsRestartsFormatted ; DualStarts = $DualStatsStartsFormatted } | Export-Csv -Path $statsFile -Append -NoTypeInformation -UseCulture
 
         # Remember the current stats
         $global:RNDRStatsCounter = $RNDRRuntimeCounter
@@ -363,15 +335,13 @@ Function Write-Watchdog-Stats {
 # Helper function to add a new entry to the log file
 Function Add-Logfile-Entry {
     param(
-        [parameter(Mandatory=$true)] $LogEntry
+        [parameter(Mandatory = $true)] $LogEntry
     )
 
-    if ($LogEntry -eq "") 
-    {
+    if ($LogEntry -eq "") {
         Add-Content -Path $logFile -Value ""
     } 
-    else 
-    {
+    else {
         Add-Content -Path $logFile -Value "$(Get-Date -format "yyyy-MM-dd HH:mm:ss") - $logEntry" -Encoding UTF8
     }
 
@@ -380,14 +350,13 @@ Function Add-Logfile-Entry {
 # Helper function to shutdown processes by name
 Function Stop-Processes {
     param(
-        [parameter(Mandatory=$true)] $ProcessName
+        [parameter(Mandatory = $true)] $ProcessName
     )
 
     $ProcessList = Get-Process $ProcessName -ErrorAction SilentlyContinue
 
     # If processes exist
-    if ($ProcessList) 
-    {
+    if ($ProcessList) {
         # Try graceful shutdown first
         $ProcessList.CloseMainWindow() | Out-Null
 
@@ -435,8 +404,7 @@ Function Fix-Defect-Userconfig {
     choice /c QD /n /m "Press D to replace with Default config and latest Watchdog version or Q to Quit application."
 
     # If user pressed D start update of the application
-    if ($LASTEXITCODE -eq 2)
-    {
+    if ($LASTEXITCODE -eq 2) {
         Write-Host Updating Watchdog and replacing userconfig with default...
 
         # Get the latest version
@@ -474,17 +442,15 @@ Function Fix-Defect-Userconfig {
 Function Read-IniContent {
 
     param(
-        [parameter(Mandatory=$true)] $Section,
-        [parameter(Mandatory=$true)] $Name
+        [parameter(Mandatory = $true)] $Section,
+        [parameter(Mandatory = $true)] $Name
     )
 
 
-    if ($WatchdogConfig[$Section].ContainsKey($Name))
-    {
+    if ($WatchdogConfig[$Section].ContainsKey($Name)) {
         Return $WatchdogConfig[$Section][$Name]
     }
-    else
-    {
+    else {
         # Download the latest user config file and replace the defect one
         Fix-Defect-Userconfig
     }
@@ -499,31 +465,28 @@ Function Get-IniContent {
     [CmdletBinding()]  
     Param(  
         [ValidateNotNullOrEmpty()]  
-        [ValidateScript({(Test-Path $_) -and ((Get-Item $_).Extension -eq ".ini")})]  
-        [Parameter(ValueFromPipeline=$True,Mandatory=$True)]  
+        [ValidateScript({ (Test-Path $_) -and ((Get-Item $_).Extension -eq ".ini") })]  
+        [Parameter(ValueFromPipeline = $True, Mandatory = $True)]  
         [string]$FilePath  
     )  
       
     Begin  
-        {Write-Verbose "$($MyInvocation.MyCommand.Name):: Function started"}  
+    { Write-Verbose "$($MyInvocation.MyCommand.Name):: Function started" }  
           
-    Process  
-    {  
+    Process {  
         Write-Verbose "$($MyInvocation.MyCommand.Name):: Processing file: $Filepath"  
               
         $ini = @{}  
-        switch -regex -file $FilePath  
-        {  
-            "^\[(.+)\]$" # Section  
-            {  
+        switch -regex -file $FilePath {  
+            "^\[(.+)\]$" {
+                # Section    
                 $section = $matches[1]  
                 $ini[$section] = @{}  
                 $CommentCount = 0  
             }  
-            "^(;.*)$" # Comment  
-            {  
-                if (!($section))  
-                {  
+            "^(;.*)$" {
+                # Comment    
+                if (!($section)) {  
                     $section = "No-Section"  
                     $ini[$section] = @{}  
                 }  
@@ -532,14 +495,13 @@ Function Get-IniContent {
                 $name = "Comment" + $CommentCount  
                 $ini[$section][$name] = $value  
             }   
-            "(.+?)\s*=\s*(.*)" # Key  
-            {  
-                if (!($section))  
-                {  
+            "(.+?)\s*=\s*(.*)" {
+                # Key    
+                if (!($section)) {  
                     $section = "No-Section"  
                     $ini[$section] = @{}  
                 }  
-                $name,$value = $matches[1..2]  
+                $name, $value = $matches[1..2]  
                 $ini[$section][$name] = $value  
             }  
         }  
@@ -548,7 +510,7 @@ Function Get-IniContent {
     }  
           
     End  
-        {Write-Verbose "$($MyInvocation.MyCommand.Name):: Function ended"}  
+    { Write-Verbose "$($MyInvocation.MyCommand.Name):: Function ended" }  
 }
 
 
@@ -566,12 +528,12 @@ $WatchdogGithubRepoName = "rndr-watchdog"
 
 
 #Load user configuration stored in RNDR_Watchdog_DualUse_Userconfig.ini in same directory
-try{$WatchdogConfig = Get-IniContent "$currentPath\RNDR_Watchdog_Userconfig.ini"}catch{Fix-Defect-Userconfig}
+try { $WatchdogConfig = Get-IniContent "$currentPath\RNDR_Watchdog_Userconfig.ini" }catch { Fix-Defect-Userconfig }
 
-$StartsAsAdmin = if(($WatchdogConfig["watchdog"]["StartAsAdmin"]) -eq "true"){$true}else{$false}
+$StartsAsAdmin = if (($WatchdogConfig["watchdog"]["StartAsAdmin"]) -eq "true") { $true }else { $false }
 
 # Elevate administrator rights and set same folder location.
-if ($StartsAsAdmin -and !([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`" " -Verb RunAs; exit }else{}
+if ($StartsAsAdmin -and !([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) { Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`" " -Verb RunAs; exit }else {}
 
 # Initialize other application variables
 $RNDRClientLogs = "$env:localappdata\OtoyRndrNetwork\rndr_log.txt"
@@ -610,34 +572,34 @@ $tag = 0
 # Initialize user variables from the .ini file
 
 # [watchdog]
-$UseOverclocking = if((Read-IniContent "watchdog" "UseOverclocking" ) -eq "true"){$true}else{$false}
+$UseOverclocking = if ((Read-IniContent "watchdog" "UseOverclocking" ) -eq "true") { $true }else { $false }
 $WindowWidth = Read-IniContent "watchdog" "WindowWidth" 
 $WindowHeight = Read-IniContent "watchdog" "WindowHeight"
 
 # rndr_stats
-$UseDual = if((Read-IniContent "rndr_stats" "UseDual" ) -eq "true"){$true}else{$false}
+$UseDual = if ((Read-IniContent "rndr_stats" "UseDual" ) -eq "true") { $true }else { $false }
 $Password = Read-IniContent "rndr_stats" "Password" 
 
 #  rndr_app 
 $RNDRClientLaunchCommand = Read-IniContent "rndr_app" "RNDRClientLaunchCommand" 
-if (!(Test-Path $RNDRClientLaunchCommand)){$RNDRClientLaunchCommand = "$currentPath\$RNDRClientLaunchCommand"}
+if (!(Test-Path $RNDRClientLaunchCommand)) { $RNDRClientLaunchCommand = "$currentPath\$RNDRClientLaunchCommand" }
 $RNDRProcessName = Read-IniContent "rndr_app" "RNDRProcessName" 
 
 #  dual_app
 $DualLauchCommand = Read-IniContent "dual_app" "DualLauchCommand" 
-if (!(Test-Path $DualLauchCommand)){$DualLauchCommand = "$currentPath\$DualLauchCommand"}
+if (!(Test-Path $DualLauchCommand)) { $DualLauchCommand = "$currentPath\$DualLauchCommand" }
 $DualProcessName = Read-IniContent "dual_app" "DualProcessName" 
 $DualWebAPIShutdownCommand = Read-IniContent "dual_app" "DualWebAPIShutdownCommand" 
 
 #  overclocking_app 
 $OverclockingApp = Read-IniContent "overclocking_app" "OverclockingApp" 
-if (!(Test-Path $OverclockingApp)){$OverclockingApp = "$currentPath\$OverclockingApp"}
+if (!(Test-Path $OverclockingApp)) { $OverclockingApp = "$currentPath\$OverclockingApp" }
 $OverclockingCommandRNDR = Read-IniContent "overclocking_app" "OverclockingCommandRNDR" 
 $OverclockingCommandDual = Read-IniContent "overclocking_app" "OverclockingCommandDual" 
 
 #  logging 
 $logFile = Read-IniContent "logging" "logFile" 
-if (!(Test-Path $logFile)){$logFile = "$currentPath\$logFile"}
+if (!(Test-Path $logFile)) { $logFile = "$currentPath\$logFile" }
 
 #  timer 
 $WatchdogWarmup = Read-IniContent "timer" "WatchdogWarmup" 
@@ -659,9 +621,9 @@ $alltimeRNDRRestarts = (Get-ItemProperty -Path Registry::HKEY_CURRENT_USER\SOFTW
 $alltimeDualStarts = (Get-ItemProperty -Path Registry::HKEY_CURRENT_USER\SOFTWARE\OTOY -Name Starts_Dual -errorAction SilentlyContinue).Starts_Dual
 
 [console]::Title = "RNDR Watchdog $Release (Dual Use Version)"
-[console]::WindowWidth= $WindowWidth
-[console]::WindowHeight= $WindowHeight
-[console]::BufferWidth=[console]::WindowWidth
+[console]::WindowWidth = $WindowWidth
+[console]::WindowHeight = $WindowHeight
+[console]::BufferWidth = [console]::WindowWidth
 
 # Start Watchdog
 Write-Host RNDR Watchdog $Release started at
@@ -678,27 +640,23 @@ Add-Logfile-Entry ""
 Add-Logfile-Entry "---- RNDR Watchdog $Release started ---- "
 
 # Check if CSV file already exists and create new one with headers if not
-if ($WriteStatsFile -and !(Test-Path $statsFile))
-{
+if ($WriteStatsFile -and !(Test-Path $statsFile)) {
     # Write header to the stats file
-       [pscustomobject]@{ Time =  $(Get-Date -format "yyyy-MM-dd HH:mm:ss"); RNDRMinutes = 0; DualMinutes = 0 ; RNDRPercentage = "0%" ; DualPercentage = "0%" ; RNDRRestarts = 0 ; DualStarts = 0 } | Export-Csv -Path $statsFile -NoTypeInformation -UseCulture
+    [pscustomobject]@{ Time = $(Get-Date -format "yyyy-MM-dd HH:mm:ss"); RNDRMinutes = 0; DualMinutes = 0 ; RNDRPercentage = "0%" ; DualPercentage = "0%" ; RNDRRestarts = 0 ; DualStarts = 0 } | Export-Csv -Path $statsFile -NoTypeInformation -UseCulture
 }
 
 # Check tag of latest release in the Github repository
-try
-{
+try {
     $tag = (Invoke-WebRequest "https://api.github.com/repos/$WatchdogGithubRepo/releases" -ErrorAction SilentlyContinue -UseBasicParsing | ConvertFrom-Json)[0].tag_name
 }
-catch
-{
+catch {
     Add-Logfile-Entry "Could not check for new versions at https://api.github.com/repos/$WatchdogGithubRepo/releases"
     Add-Logfile-Entry "Error message: $_"
     
 }
 
 # If this release has a different version then a new version is available
-if (($tag -ne 0) -and ($tag -ne $Release))
-{
+if (($tag -ne 0) -and ($tag -ne $Release)) {
     Write-Host -ForegroundColor Red A new version Watchdog $tag is available. Press U to update now.
     Write-Host
     Add-Logfile-Entry "A new version Watchdog $tag is available. Please consider updating."
@@ -708,7 +666,7 @@ if (($tag -ne 0) -and ($tag -ne $Release))
 choice /c SU /n /t $WatchdogWarmup /d S /m "Waiting $WatchdogWarmup seconds. Press S to start now."
 
 # If user pressed U start update of the application
-if ($LASTEXITCODE -eq 2){
+if ($LASTEXITCODE -eq 2) {
     Write-Host (Get-Date -format "yyyy-MM-dd HH:mm:ss") : Updating Watchdog and restarting.
     Download-Latest-Watchdog
 
@@ -741,29 +699,23 @@ Launch-RNDR-Client
 
 # ---- MAIN LOOP -----
 # Run as long as watchdog is open
-while ($true)
-{
+while ($true) {
     #Loop as long as RNDR is IDLE
-    while(Check-RNDR-Client-Idle)
-    {
-        if ($UseDual) 
-        {
+    while (Check-RNDR-Client-Idle) {
+        if ($UseDual) {
             $CurrentActivity = "Dual workload"
             Write-Watchdog-Status 
 
             # Check if Dual is not running
-            if (!(Check-Dual-Workload-Running))
-            { 
+            if (!(Check-Dual-Workload-Running)) { 
 
                 # Before launching Dual, take another break and test before starting it to avoid that RNDR is not idle anymore.
                 Start-Sleep -Seconds $sleepIdleRetest
                 
-                if (Check-RNDR-Client-Idle)
-                {
+                if (Check-RNDR-Client-Idle) {
                     
                     # If RNDR was running before then calculate runtime
-                    if($global:RNDRStartDate)
-                    {
+                    if ($global:RNDRStartDate) {
                         $LastRun = (New-TimeSpan -Start $global:RNDRStartDate).Totalhours
                         $RNDRRuntime = $RNDRRuntime + $LastRun
                         $global:RNDRStartDate = $null
@@ -785,8 +737,7 @@ while ($true)
                     $DualProcess = Launch-Dual-Workload
 
                 }
-                else
-                {
+                else {
                     Write-Host (Get-Date -format "yyyy-MM-dd HH:mm:ss") : Dual start PREVENTED. RNDR not idle. 
                     # Write event to log
                     Add-Logfile-Entry "Dual start PREVENTED. RNDR not idle."
@@ -794,8 +745,7 @@ while ($true)
             }
 
         } 
-        else 
-        {
+        else {
             if ($CurrentActivity -ne "Idle") {
                 $CurrentActivity = "Idle"
                 Write-Watchdog-Status 
@@ -810,7 +760,7 @@ while ($true)
 
         Update-Node
 
-        if($global:DualStartDate -And $UseDual) {$DualRuntimeCounter = $DualRuntime + (New-TimeSpan -Start $global:DualStartDate).Totalhours}
+        if ($global:DualStartDate -And $UseDual) { $DualRuntimeCounter = $DualRuntime + (New-TimeSpan -Start $global:DualStartDate).Totalhours }
 
     }
 
@@ -820,15 +770,13 @@ while ($true)
     Write-Watchdog-Status
     
     # Check if Dual is  running
-    if (Check-Dual-Workload-Running)
-    {
+    if (Check-Dual-Workload-Running) {
         # Shutdown Dual
         Write-Host (Get-Date -format "yyyy-MM-dd HH:mm:ss") : Dual shutdown signal sent. RNDR active.
         Stop-Dual-Workload
 
         # If Dual was running before then calculate runtime
-        if($global:DualStartDate)
-        {
+        if ($global:DualStartDate) {
             # Add last run duration to the runtime
             $LastRun = (New-TimeSpan -Start $global:DualStartDate).Totalhours
             $DualRuntime = $DualRuntime + $LastRun
@@ -845,8 +793,7 @@ while ($true)
         # Update timestamp when RNDR started
         $global:RNDRStartDate = Get-Date
     } 
-    else 
-    {
+    else {
         Check-Job
     }
 
@@ -858,6 +805,6 @@ while ($true)
 
     Update-Node
 
-    if($global:RNDRStartDate){$RNDRRuntimeCounter = $RNDRRuntime + (New-TimeSpan -Start $global:RNDRStartDate).Totalhours}
+    if ($global:RNDRStartDate) { $RNDRRuntimeCounter = $RNDRRuntime + (New-TimeSpan -Start $global:RNDRStartDate).Totalhours }
     
 }
