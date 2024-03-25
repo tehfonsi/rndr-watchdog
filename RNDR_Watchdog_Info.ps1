@@ -105,6 +105,9 @@ Function Set-Node($Password) {
     $Password = $null
   }
   $URL = "$($BASE_URL)/node"
+  $SCORE = (Get-ItemProperty -Path Registry::HKEY_CURRENT_USER\SOFTWARE\OTOY -Name SCORE -errorAction SilentlyContinue).SCORE
+  $PREVIEWS_SENT = (Get-ItemProperty -Path Registry::HKEY_CURRENT_USER\SOFTWARE\OTOY -Name PREVIEWS_SENT -errorAction SilentlyContinue).PREVIEWS_SENT
+  $JOBS_COMPLETED = (Get-ItemProperty -Path Registry::HKEY_CURRENT_USER\SOFTWARE\OTOY -Name JOBS_COMPLETED -errorAction SilentlyContinue).JOBS_COMPLETED
   $Params = @{eth_address = $WALLETID; node_id = $NODEID; score = $SCORE; previews_sent = $PREVIEWS_SENT; jobs_completet = $JOBS_COMPLETED; thumbnails_sent = $THUMBNAILS_SENT; gpus = $GPUS; password = $Password }
   $Result = Invoke-WebRequest -Uri $URL -Method PUT -Body ($Params | ConvertTo-Json) -ContentType "application/json" -UseBasicParsing
   
