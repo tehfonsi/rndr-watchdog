@@ -1,5 +1,5 @@
 $LOCAL = $false
-$BASE_URL = "https://rndr-stats.netlify.app/api"
+$BASE_URL = "https://www.rndr-stats.com/api"
 if ($LOCAL) { $BASE_URL = "http://localhost:8888/api" }
 
 $WALLETID = (Get-ItemProperty -Path Registry::HKEY_CURRENT_USER\SOFTWARE\OTOY -Name WALLETID -errorAction SilentlyContinue).WALLETID
